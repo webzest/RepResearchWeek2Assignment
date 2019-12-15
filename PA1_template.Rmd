@@ -1,0 +1,118 @@
+---
+title: "Reproducible Research: Peer Assessment 1"
+output: 
+  html_document:
+    keep_md: true
+---
+
+```{r, echo=FALSE, results='hide', warning=FALSE, message=FALSE}
+library(ggplot2)
+library(scales)
+library(Hmisc)
+```
+
+## Loading and preprocessing the data
+
+##### 1. Load the data (i.e. read.csv())
+
+```{r, results='markup'}
+if(!file.exists('activity.csv')){
+    unzip('activity.zip')
+}
+walkData <- read.csv('activity.csv')
+summary(walkData)
+```
+
+## What is mean total number of steps taken per day?
+```{r}
+dailySteps <- tapply(walkData$steps, walkData$date, sum, na.rm=TRUE)
+```
+
+##### Make a histogram of the total number of steps taken each day
+```{r}
+qplot(dailySteps, xlab='Total Number of Steps Taken Per Day', ylab='Frequency/1000', binwidth=1000)
+```
+
+##### Calculate and report the mean and median total number of steps taken per day
+```{r}
+dailyStepsMean <- mean(dailySteps)
+dailyStepsMedian <- median(dailySteps)
+```
+1.  Mean Total Number of Steps Taken Per Day: `r dailyStepsMean`
+2.  Median Total Number of Steps Taken Per Day:  `r dailyStepsMedian`
+
+-----
+
+## What is the average daily activity pattern?
+```{r}
+avgDailyWalkPat <- aggregate(x=list(meanWalk=walkData$steps), by=list(interval=walkData$interval), FUN=mean, na.rm=TRUE)
+```
+
+##### Make a time series plot
+```{r}
+ggplot(data=avgDailyWalkPat, aes(x=interval, y=meanWalk)) +
+    geom_line() +
+    xlab("5-minute Walk Interval") +
+    ylab("Mean Number of Steps") 
+```
+
+##### Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
+```{r}
+mostSteps <- which.max(avgDailyWalkPat$meanWalk)
+timeMostSteps <-  gsub("([0-9]{1,2})([0-9]{2})", "\\1:\\2", avgDailyWalkPat[mostSteps,'interval'])
+```
+
+* Most Steps at: `r timeMostSteps`
+
+----
+
+## Imputing missing values
+##### Calculate and report the total number of missing values in the dataset 
+```{r}
+numMissingValues <- length(which(is.na(walkData$steps)))
+```
+
+* Number of missing values: `r numMissingValues`
+
+##### Devise a strategy for filling in all of the missing values in the dataset.
+##### Create a new dataset that is equal to the original dataset but with the missing data filled in.
+```{r}
+walkDataImputed <- walkData
+walkDataImputed$steps <- impute(walkData$steps, fun=mean)
+```
+
+
+##### Make a histogram of the total number of steps taken each day 
+```{r}
+dailyStepsImputed <- tapply(walkDataImputed$steps, walkDataImputed$date, sum)
+qplot(dailyStepsImputed, xlab='Total Steps / Day (Imputed)', ylab='Frequency/1000', binwidth=1000)
+```
+
+##### Calculate and report the mean and median total number of steps taken per day. 
+```{r}
+dailyStepsMeanImputed <- mean(dailyStepsImputed)
+dailyStepsMedianImputed <- median(dailyStepsImputed)
+```
+* Mean (Imputed): `r dailyStepsMeanImputed`
+* Median (Imputed):  `r dailyStepsMedianImputed`
+
+
+----
+
+## Are there differences in activity patterns between weekdays and weekends?
+##### Create a new factor variable in the dataset with two levels – “weekday” and “weekend” indicating whether a given date is a weekday or weekend day.
+
+```{r}
+walkDataImputed$dateType <-  ifelse(as.POSIXlt(walkDataImputed$date)$wday %in% c(0,6), 'weekend', 'weekday')
+```
+
+##### Make a panel plot containing a time series plot
+
+```{r}
+averagedwalkDataImputed <- aggregate(steps ~ interval + dateType, data=walkDataImputed, mean)
+ggplot(averagedwalkDataImputed, aes(interval, steps)) + 
+    geom_line() + 
+    facet_grid(dateType ~ .) +
+    xlab("5-minute Walk Interval") + 
+    ylab("Mean Number of Steps")
+```
