@@ -1,5 +1,6 @@
 ---
 title: "Reproducible Research: Peer Assessment 1"
+Author: Johnny Sandaire
 output: 
   html_document:
     keep_md: true
@@ -9,6 +10,8 @@ output:
 library(ggplot2)
 library(scales)
 library(Hmisc)
+library(dplyr)
+library(lubridate)
 ```
 
 ## Loading and preprocessing the data
@@ -25,18 +28,26 @@ summary(walkData)
 
 ## What is mean total number of steps taken per day?
 ```{r}
-dailySteps <- tapply(walkData$steps, walkData$date, sum, na.rm=TRUE)
+dailySteps <- walkData %>% 
+      group_by(date) %>%
+      summarise(totalSteps=sum(steps, na.rm = TRUE))
 ```
 
 ##### Make a histogram of the total number of steps taken each day
 ```{r}
-qplot(dailySteps, xlab='Total Number of Steps Taken Per Day', ylab='Frequency/1000', binwidth=1000)
+hist(x=dailySteps$totalSteps, main = "Total number of steps taken per day", 
+     xlab = "Total steps taken per day", ylab = "Number of days", 
+     breaks = 10, col = "red")
+abline(v = mean(dailySteps$totalSteps, na.rm = TRUE), lty = 1, lwd = 2, col = "steel blue")
+abline(v = median(dailySteps$totalSteps, na.rm = TRUE), lty = 2, lwd = 2, col = "yellow")
+text(y = 15, x = mean(dailySteps$totalSteps, na.rm = TRUE), pos=2, labels = "Mean")
+text(y = 15, x = median(dailySteps$totalSteps, na.rm = TRUE), pos=4, labels = "Median", col="black")
 ```
 
 ##### Calculate and report the mean and median total number of steps taken per day
 ```{r}
-dailyStepsMean <- mean(dailySteps)
-dailyStepsMedian <- median(dailySteps)
+dailyStepsMean <- mean(dailySteps$totalSteps, na.rm = TRUE)
+dailyStepsMedian <- median(dailySteps$totalSteps, na.rm = TRUE)
 ```
 1.  Mean Total Number of Steps Taken Per Day: `r dailyStepsMean`
 2.  Median Total Number of Steps Taken Per Day:  `r dailyStepsMedian`
@@ -84,14 +95,24 @@ walkDataImputed$steps <- impute(walkData$steps, fun=mean)
 
 ##### Make a histogram of the total number of steps taken each day 
 ```{r}
-dailyStepsImputed <- tapply(walkDataImputed$steps, walkDataImputed$date, sum)
-qplot(dailyStepsImputed, xlab='Total Steps / Day (Imputed)', ylab='Frequency/1000', binwidth=1000)
+dailyStepsImputed <- walkDataImputed %>% 
+      group_by(date) %>%
+      summarise(total_steps=sum(steps, na.rm = TRUE))
+hist(x=dailyStepsImputed$total_steps, main = "Total number of steps taken per day", 
+     xlab = "Total steps taken per day", ylab = "Number of days", 
+     breaks = 10, col = "red")
+abline(v = mean(dailyStepsImputed$total_steps, na.rm = TRUE), lty = 1, lwd = 2, col = "yellow")
+abline(v = median(dailyStepsImputed$total_steps, na.rm = TRUE), lty = 2, lwd = 2, col = "black")
+text(y = 15, x = mean(dailyStepsImputed$total_steps, na.rm = TRUE), pos=4, labels = "mean")
+text(y = 15, x = median(dailyStepsImputed$total_steps, na.rm = TRUE), pos=2, labels = "median")
 ```
+
 
 ##### Calculate and report the mean and median total number of steps taken per day. 
 ```{r}
-dailyStepsMeanImputed <- mean(dailyStepsImputed)
-dailyStepsMedianImputed <- median(dailyStepsImputed)
+dailyStepsMeanImputed <- mean(dailyStepsImputed$total_steps, na.rm = TRUE)
+dailyStepsMedianImputed <- median(dailyStepsImputed$total_steps, na.rm = TRUE)
+
 ```
 * Mean (Imputed): `r dailyStepsMeanImputed`
 * Median (Imputed):  `r dailyStepsMedianImputed`
